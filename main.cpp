@@ -552,15 +552,12 @@ int main() {
   std::locale::global(std::locale("en_US.UTF-8"));
 
   int n;
-  while (true) {
-    menu();
-    std::cin >> n;
-    if (n == 1) {
-      run_game();
-    } else {
-      std::cout << "Debug: Не реализовано" << std::endl;
-      return 0;
-    }
+  menu();
+  std::cin >> n;
+  if (n == 1) {
+    run_game();
+  } else {
+    std::cout << "Debug: Не реализовано" << std::endl;
   }
   return 0;
 }
