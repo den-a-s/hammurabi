@@ -21,22 +21,7 @@ struct RoundState {
 
 using GameState = std::vector<RoundState>;
 
-GameState new_game_state() {
-  // —читаем что изначально 1000 акров засажено пшеницей
-  RoundState default_parametrs{
-      .num_round = 1,
-      .city_state = CityState{.num_acre = 1000,
-                              .num_acre_with_wheat = 1000,
-                              .num_citizen = 100,
-                              .bushels_wheat = 2800},
-      .city_events = std::nullopt,
-      .rulers_decisions = std::nullopt};
-
-  GameState gs;
-  gs.reserve(10);
-  gs.push_back(default_parametrs);
-  return gs;
-}
+GameState new_game_state();
 
 bool is_valid_round(RoundState const& r);
 
