@@ -9,7 +9,7 @@
 #include "city_events.h"
 #include "rullers_decisions.h"
 
-constexpr int FINAL_ROUND = 10;
+constexpr int FINAL_ROUND = 2;
 constexpr int MAX_PERCENT_DEAD_CITIZEN = 45;  // от голода
 
 struct RoundState {
@@ -30,6 +30,10 @@ bool round_is_over(RoundState const& r);
 bool is_final_round(RoundState const& r);
 
 RoundState get_next_round(RoundState const& prev_round);
+
+double calc_mean_dead_persons(GameState const& game_state);
+
+double calc_num_acres_per_citizen(GameState const& game_state);
 
 template <>
 struct std::formatter<RoundState> {

@@ -18,8 +18,7 @@
 #include "round_state.h"
 
 void menu() {
-  std::cout << "Добро пожаловать в игру Хаммурапи: Правитель Египта."
-            << std::endl;
+  std::cout << "Добро пожаловать в игру Хаммурапи: Правитель Египта." << std::endl;
   std::cout << "Начать игру:" << std::endl;
   std::cout << "1. Новая игра" << std::endl;
   std::cout << "2. Загрузить игру" << std::endl;
@@ -43,7 +42,7 @@ void print_message_to_ruler(RoundState const& rs) {
         "{}\n"
         "{}\n"
         "{}\n"
-        "Что пожелаешь, повелитель?\n";
+        "Что пожелаешь, повелитель?";
 
     CityState const& cs = rs.city_state;
     CityEvents const& ce = rs.city_events.value();
@@ -110,14 +109,28 @@ void print_message_to_ruler(RoundState const& rs) {
                               num_citizen_str, new_bushels_str, eat_bushels_str,
                               num_acre_str, price_acre_str));
 
-    std::println("{}", msg);
+    std::cout << msg << std::endl;
+}
+
+enum class GameEndEnum {
+    Bad,
+    Normal,
+    Good,
+    Great
+};
+
+GameEndEnum is_win(double P, double L) {
+  if (P > 33.0 && L < 7.0) return GameEndEnum::Bad;
+  if (P > 10.0 && L < 9.0) return GameEndEnum::Normal;
+  if (P > 3.0 && L < 10.0) return GameEndEnum::Normal;
+  return GameEndEnum::Great;
 }
 
 void run_game() {
   int seed = 1;
   GameState state = new_game_state();
   while (state.size() < FINAL_ROUND) {
-    auto current_round = state.back();
+    auto& current_round = state.back();
 
     if (!is_valid_round(current_round)) {
       std::cout << "Номер раунда не находится в диапозоне 1-10" << std::endl;
@@ -136,22 +149,23 @@ void run_game() {
 
     print_message_to_ruler(current_round);
 
-    std::println("current_round after events: {}", current_round);
-
-    return;
-
     current_round.rulers_decisions =
         get_rulers_decisions(std::cin, current_round.city_state, *current_round.city_events);
 
-    std::println("current_round: {}", current_round);
+    state.push_back(get_next_round(current_round));
   }
 
-  // TODO Считаем статистики P и L
+  double P = calc_mean_dead_persons(state);
+  double L = calc_num_acres_per_citizen(state);
+  
+  std::cout << "Is this the end..." << std::endl;
+  std::cout << static_cast<int>(is_win(P, L)) << std::endl;
 }
 
 int main() {
   // UTF-8 позволяет кроссплатформенно выводить русские символы в консоль
-  std::locale::global(std::locale("en_US.UTF-8"));
+  std::locale utf8("ru_RU.UTF-8");
+  std::locale::global(utf8);
 
   int n;
   menu();

@@ -1,151 +1,93 @@
 #include "rullers_decisions.h"
 
-#include "utils.h"
+#include <print>
 
 #include <expected>
 
-// TODO возвращать std::expected<int32_t, Enum error>
-// где enum error содержит в себе все ошибки не правильного парсинга и
-// логические ошибки чтобы можно было выше решить какое сообщение вывести
-// пользователю
-int32_t read_num_acre_to_buy_with_retry(std::istream& in,
-                                        CityState const& city_state,
-                                        CityEvents const& city_events) {
-  return read_int_with_retry(
-      in,
-      [&city_state, &city_events](
-          std::string const& buf) -> std::expected<int32_t, std::string> {
-        auto res = buf_to_int(buf);
-        if (!res.has_value()) return res;
+#include "utils.h"
 
-        int32_t num_acre_to_buy = res.value();
+Validator validate_num_acre_to_buy(CityState const& city_state,
+                                   CityEvents const& city_events) {
+  return [&city_state, &city_events](
+             int32_t const& value) -> std::expected<int32_t, ValidationError> {
+    int32_t bushels_wheat_with_harvested =
+        city_state.bushels_wheat +
+        get_num_cultivate_bushels(city_state, city_events);
 
-        if (num_acre_to_buy < 0) {
-          return std::unexpected("negative num");
-        }
+    int32_t bushels_acre_buy = value * city_events.acre_price;
 
-        int32_t bushels_wheat_with_harvested =
-            city_state.bushels_wheat +
-            get_num_cultivate_bushels(city_state, city_events);
+    // TODO пон€ть с собранными ли копнами мы считаем или нет
+    bool is_can_buy_acre = bushels_acre_buy <= city_state.bushels_wheat;
 
-        int32_t bushels_acre_buy = num_acre_to_buy * city_events.acre_price;
+    if (!is_can_buy_acre) {
+      return std::unexpected(ValidationError::NotEnoughAcres);
+    }
 
-        // TODO пон€ть с собранными ли копнами мы считаем или нет
-        bool is_can_buy_acre = bushels_acre_buy <= city_state.bushels_wheat;
-
-        if (!is_can_buy_acre) {
-          return std::unexpected("You cant buy bushels");
-        }
-
-        return num_acre_to_buy;
-      });
+    return value;
+  };
 }
 
-// TODO возвращать std::expected<int32_t, Enum error>
-// где enum error содержит в себе все ошибки не правильного парсинга и
-// логические ошибки чтобы можно было выше решить какое сообщение вывести
-// пользователю
-int32_t read_num_acre_to_sold_with_retry(std::istream& in,
-                                         CityState const& city_state,
-                                         CityEvents const& city_events) {
-  return read_int_with_retry(
-      in,
-      [&city_state, &city_events](
-          std::string const& buf) -> std::expected<int32_t, std::string> {
-        auto res = buf_to_int(buf);
-        if (!res.has_value()) return res;
+Validator validate_num_acre_to_sold(CityState const& city_state,
+                                    CityEvents const& city_events) {
+  return [&city_state, &city_events](
+             int32_t const& value) -> std::expected<int32_t, ValidationError> {
+    bool is_can_sold_acres = value <= city_state.num_acre;
 
-        int32_t num_acre_to_sold = res.value();
+    if (!is_can_sold_acres) {
+      return std::unexpected(ValidationError::TooManyAcres);
+    }
 
-        if (num_acre_to_sold < 0) {
-          return std::unexpected("negative num");
-        }
-
-        bool is_can_sold_acres = num_acre_to_sold <= city_state.num_acre;
-
-        if (!is_can_sold_acres) {
-          return std::unexpected("You cant sold acre");
-        }
-
-        return num_acre_to_sold;
-      });
+    return value;
+  };
 }
 
-// TODO возвращать std::expected<int32_t, Enum error>
-// где enum error содержит в себе все ошибки не правильного парсинга и
-// логические ошибки чтобы можно было выше решить какое сообщение вывести
-// пользователю
-int32_t read_bushels_wheat_to_citizen_with_retry(
-    std::istream& in, CityState const& city_state,
-    CityEvents const& city_events, RulersDecisions const& rulers_decisions) {
-  return read_int_with_retry(
-      in,
-      [&city_state, &city_events, &rulers_decisions](
-          std::string const& buf) -> std::expected<int32_t, std::string> {
-        auto res = buf_to_int(buf);
-        if (!res.has_value()) return res;
+Validator validate_bushels_wheat_to_citizen(
+    CityState const& city_state, CityEvents const& city_events,
+    RulersDecisions const& rulers_decisions) {
+  return [&city_state, &city_events,
+          &rulers_decisions](int32_t const& bushels_wheat_to_citizen)
+             -> std::expected<int32_t, ValidationError> {
+    int32_t bushels_to_buy_acres =
+        rulers_decisions.num_acre_to_buy * city_events.acre_price;
 
-        int32_t bushels_wheat_to_citizen = res.value();
+    int32_t bushels_to_sold_acres =
+        rulers_decisions.num_acre_to_sold * city_events.acre_price;
 
-        if (bushels_wheat_to_citizen < 0) {
-          return std::unexpected("negative num");
-        }
+    int32_t bushels_wheat_after_rulers_decision =
+        city_state.bushels_wheat +
+        get_num_cultivate_bushels(city_state, city_events) -
+        bushels_to_buy_acres + bushels_to_sold_acres;
 
-        int32_t bushels_to_buy_acres =
-            rulers_decisions.num_acre_to_buy * city_events.acre_price;
+    bool is_can_give_bushels =
+        bushels_wheat_to_citizen <= bushels_wheat_after_rulers_decision;
 
-        int32_t bushels_to_sold_acres =
-            rulers_decisions.num_acre_to_sold * city_events.acre_price;
+    if (!is_can_give_bushels) {
+      return std::unexpected(ValidationError::NotEnoughBushels);
+    }
 
-        int32_t bushels_wheat_after_rulers_decision =
-            city_state.bushels_wheat +
-            get_num_cultivate_bushels(city_state, city_events) -
-            bushels_to_buy_acres + bushels_to_sold_acres;
-
-        bool is_can_give_bushels =
-            bushels_wheat_to_citizen <= bushels_wheat_after_rulers_decision;
-
-        if (!is_can_give_bushels) {
-          return std::unexpected("You cant give bushels");
-        }
-
-        return bushels_wheat_to_citizen;
-      });
+    return bushels_wheat_to_citizen;
+  };
 }
 
-// TODO возвращать std::expected<int32_t, Enum error>
-// где enum error содержит в себе все ошибки не правильного парсинга и
-// логические ошибки чтобы можно было выше решить какое сообщение вывести
-// пользователю
-int32_t read_num_acre_to_plant_with_retry(
-    std::istream& in, CityState const& city_state,
-    CityEvents const& city_events, RulersDecisions const& rulers_decisions) {
-  return read_int_with_retry(
-      in,
-      [&city_state, &city_events, &rulers_decisions](
-          std::string const& buf) -> std::expected<int32_t, std::string> {
-        auto res = buf_to_int(buf);
-        if (!res.has_value()) return res;
+Validator validate_num_acre_to_plant(CityState const& city_state,
+                                     CityEvents const& city_events,
+                                     RulersDecisions const& rulers_decisions) {
+  return [&city_state, &city_events,
+          &rulers_decisions](int32_t const& num_acre_to_plant)
+             -> std::expected<int32_t, ValidationError> {
+    int32_t acres_after_rulers_decision = city_state.num_acre -
+                                          rulers_decisions.num_acre_to_buy +
+                                          rulers_decisions.num_acre_to_sold;
 
-        int32_t num_acre_to_plant = res.value();
+    bool is_can_plant_bushels =
+        num_acre_to_plant <= acres_after_rulers_decision;
 
-        if (num_acre_to_plant < 0) {
-          return std::unexpected("negative num");
-        }
+    if (!is_can_plant_bushels) {
+      return std::unexpected(ValidationError::TooManyAcresToPlant);
+    }
 
-        int32_t acres_after_rulers_decision = city_state.num_acre -
-                                              rulers_decisions.num_acre_to_buy +
-                                              rulers_decisions.num_acre_to_sold;
-
-        bool is_can_plant_bushels =
-            num_acre_to_plant <= acres_after_rulers_decision;
-
-        if (!is_can_plant_bushels) {
-          return std::unexpected("You cant plant bushels");
-        }
-
-        return num_acre_to_plant;
-      });
+    return num_acre_to_plant;
+  };
 }
 
 RulersDecisions get_rulers_decisions(std::istream& in,
@@ -158,13 +100,43 @@ RulersDecisions get_rulers_decisions(std::istream& in,
       .num_acre_to_plant = 0,
   };
 
-  rd.num_acre_to_buy = read_num_acre_to_buy_with_retry(in, city_state, city_events);
-  rd.num_acre_to_sold =
-      read_num_acre_to_sold_with_retry(in, city_state, city_events);
-  rd.bushels_wheat_to_citizen =
-      read_bushels_wheat_to_citizen_with_retry(in, city_state, city_events, rd);
-  rd.num_acre_to_plant =
-      read_num_acre_to_plant_with_retry(in, city_state, city_events, rd);
+  auto view_validation_error = print_validation_error();
+  
+  // Ѕлок с чтением и валидацией покупаемых акров земли
+  std::cout << "—колько акров повелеваешь купить?" << std::endl;
+
+  rd.num_acre_to_buy = read_validated_input(
+      in, view_validation_error,
+      std::vector<Validator>{
+          {validate_negative,
+           validate_num_acre_to_buy(city_state, city_events)}});
+
+  // Ѕлок с чтением и валидацией продаваемых акров земли
+  std::cout << "—колько акров повелеваешь продать?" << std::endl;
+
+  rd.num_acre_to_sold = read_validated_input(
+      in, view_validation_error,
+      std::vector<Validator>{
+          {validate_negative,
+           validate_num_acre_to_sold(city_state, city_events)}});
+
+  // Ѕлок с чтением и валидацией съедаемых запасов пшеницы
+  std::cout << "—колько бушелей пшеницы повелеваешь съесть?"<< std::endl;
+
+  rd.bushels_wheat_to_citizen = read_validated_input(
+      in, view_validation_error,
+      std::vector<Validator>{
+          {validate_negative,
+           validate_bushels_wheat_to_citizen(city_state, city_events, rd)}});
+
+  // Ѕлок с чтением и валидацией акров которые отдаютс€ под засев
+  std::cout << "—колько акров земли повелеваешь засе€ть?" << std::endl;
+
+  rd.num_acre_to_plant = read_validated_input(
+      in, view_validation_error,
+      std::vector<Validator>{
+          {validate_negative,
+           validate_num_acre_to_plant(city_state, city_events, rd)}});
 
   return rd;
 }
