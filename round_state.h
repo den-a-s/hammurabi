@@ -9,37 +9,53 @@
 #include "city_events.h"
 #include "rullers_decisions.h"
 
-constexpr int FINAL_ROUND = 2;
-constexpr int MAX_PERCENT_DEAD_CITIZEN = 45;  // от голода
+constexpr int FICTIVE_ROUND = 1;
+constexpr int FINAL_ROUND = 10 + FICTIVE_ROUND;
+constexpr int MAX_PERCENT_DEAD_CITIZEN = 45;
 
-struct RoundState {
-  int32_t num_round;
+enum class StartGameState
+{
+  NewGame = 1,
+  LoadGame = 2
+};
+
+struct RoundState
+{
+  int num_round;
   CityState city_state;
   std::optional<CityEvents> city_events;
   std::optional<RulersDecisions> rulers_decisions;
 };
 
-using GameState = std::vector<RoundState>;
+struct GameState
+{
+  int seed;
+  std::vector<RoundState> rounds;
+};
 
-GameState new_game_state();
+GameState start_game_state(StartGameState cmd);
 
-bool is_valid_round(RoundState const& r);
+void save_game(GameState const &game_state);
 
-bool round_is_over(RoundState const& r);
+bool is_valid_round(RoundState const &r);
 
-bool is_final_round(RoundState const& r);
+bool round_is_over(RoundState const &r);
 
-RoundState get_next_round(RoundState const& prev_round);
+bool is_final_round(RoundState const &r);
 
-double calc_mean_dead_persons(GameState const& game_state);
+RoundState get_next_round(RoundState const &prev_round);
 
-double calc_num_acres_per_citizen(GameState const& game_state);
+double calc_mean_dead_persons(std::vector<RoundState> const &game_state);
+
+double calc_num_acres_per_citizen(std::vector<RoundState> const &game_state);
 
 template <>
-struct std::formatter<RoundState> {
-  constexpr auto parse(std::format_parse_context& ctx) { return ctx.begin(); }
+struct std::formatter<RoundState>
+{
+  constexpr auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
 
-  auto format(const RoundState& rs, std::format_context& ctx) const {
+  auto format(const RoundState &rs, std::format_context &ctx) const
+  {
     return std::format_to(
         ctx.out(),
         "RoundState[num_round={}, city_state={}, "
@@ -49,3 +65,13 @@ struct std::formatter<RoundState> {
         rs.rulers_decisions ? std::format("{}", *rs.city_events) : "none");
   }
 };
+
+json to_json(const RoundState &state);
+
+template <>
+RoundState from_json<RoundState>(const json &j);
+
+json to_json(const GameState &state);
+
+template <>
+GameState from_json<GameState>(const json &j);

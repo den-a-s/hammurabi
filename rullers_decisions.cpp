@@ -1,25 +1,26 @@
 #include "rullers_decisions.h"
 
-#include <print>
-
 #include <expected>
 
 #include "utils.h"
 
-Validator validate_num_acre_to_buy(CityState const& city_state,
-                                   CityEvents const& city_events) {
+Validator validate_num_acre_to_buy(CityState const &city_state,
+                                   CityEvents const &city_events)
+{
   return [&city_state, &city_events](
-             int32_t const& value) -> std::expected<int32_t, ValidationError> {
-    int32_t bushels_wheat_with_harvested =
+             int const &value) -> std::expected<int, ValidationError>
+  {
+    int bushels_wheat_with_harvested =
         city_state.bushels_wheat +
         get_num_cultivate_bushels(city_state, city_events);
 
-    int32_t bushels_acre_buy = value * city_events.acre_price;
+    int bushels_acre_buy = value * city_events.acre_price;
 
-    // TODO понять с собранными ли копнами мы считаем или нет
+    // TODO пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅ
     bool is_can_buy_acre = bushels_acre_buy <= city_state.bushels_wheat;
 
-    if (!is_can_buy_acre) {
+    if (!is_can_buy_acre)
+    {
       return std::unexpected(ValidationError::NotEnoughAcres);
     }
 
@@ -27,13 +28,16 @@ Validator validate_num_acre_to_buy(CityState const& city_state,
   };
 }
 
-Validator validate_num_acre_to_sold(CityState const& city_state,
-                                    CityEvents const& city_events) {
+Validator validate_num_acre_to_sold(CityState const &city_state,
+                                    CityEvents const &city_events)
+{
   return [&city_state, &city_events](
-             int32_t const& value) -> std::expected<int32_t, ValidationError> {
+             int const &value) -> std::expected<int, ValidationError>
+  {
     bool is_can_sold_acres = value <= city_state.num_acre;
 
-    if (!is_can_sold_acres) {
+    if (!is_can_sold_acres)
+    {
       return std::unexpected(ValidationError::TooManyAcres);
     }
 
@@ -42,18 +46,20 @@ Validator validate_num_acre_to_sold(CityState const& city_state,
 }
 
 Validator validate_bushels_wheat_to_citizen(
-    CityState const& city_state, CityEvents const& city_events,
-    RulersDecisions const& rulers_decisions) {
+    CityState const &city_state, CityEvents const &city_events,
+    RulersDecisions const &rulers_decisions)
+{
   return [&city_state, &city_events,
-          &rulers_decisions](int32_t const& bushels_wheat_to_citizen)
-             -> std::expected<int32_t, ValidationError> {
-    int32_t bushels_to_buy_acres =
+          &rulers_decisions](int const &bushels_wheat_to_citizen)
+             -> std::expected<int, ValidationError>
+  {
+    int bushels_to_buy_acres =
         rulers_decisions.num_acre_to_buy * city_events.acre_price;
 
-    int32_t bushels_to_sold_acres =
+    int bushels_to_sold_acres =
         rulers_decisions.num_acre_to_sold * city_events.acre_price;
 
-    int32_t bushels_wheat_after_rulers_decision =
+    int bushels_wheat_after_rulers_decision =
         city_state.bushels_wheat +
         get_num_cultivate_bushels(city_state, city_events) -
         bushels_to_buy_acres + bushels_to_sold_acres;
@@ -61,7 +67,8 @@ Validator validate_bushels_wheat_to_citizen(
     bool is_can_give_bushels =
         bushels_wheat_to_citizen <= bushels_wheat_after_rulers_decision;
 
-    if (!is_can_give_bushels) {
+    if (!is_can_give_bushels)
+    {
       return std::unexpected(ValidationError::NotEnoughBushels);
     }
 
@@ -69,20 +76,23 @@ Validator validate_bushels_wheat_to_citizen(
   };
 }
 
-Validator validate_num_acre_to_plant(CityState const& city_state,
-                                     CityEvents const& city_events,
-                                     RulersDecisions const& rulers_decisions) {
+Validator validate_num_acre_to_plant(CityState const &city_state,
+                                     CityEvents const &city_events,
+                                     RulersDecisions const &rulers_decisions)
+{
   return [&city_state, &city_events,
-          &rulers_decisions](int32_t const& num_acre_to_plant)
-             -> std::expected<int32_t, ValidationError> {
-    int32_t acres_after_rulers_decision = city_state.num_acre -
-                                          rulers_decisions.num_acre_to_buy +
-                                          rulers_decisions.num_acre_to_sold;
+          &rulers_decisions](int const &num_acre_to_plant)
+             -> std::expected<int, ValidationError>
+  {
+    int acres_after_rulers_decision = city_state.num_acre -
+                                      rulers_decisions.num_acre_to_buy +
+                                      rulers_decisions.num_acre_to_sold;
 
     bool is_can_plant_bushels =
         num_acre_to_plant <= acres_after_rulers_decision;
 
-    if (!is_can_plant_bushels) {
+    if (!is_can_plant_bushels)
+    {
       return std::unexpected(ValidationError::TooManyAcresToPlant);
     }
 
@@ -90,9 +100,10 @@ Validator validate_num_acre_to_plant(CityState const& city_state,
   };
 }
 
-RulersDecisions get_rulers_decisions(std::istream& in,
-                                     CityState const& city_state,
-                                     CityEvents const& city_events) {
+RulersDecisions get_rulers_decisions(std::istream &in,
+                                     CityState const &city_state,
+                                     CityEvents const &city_events)
+{
   RulersDecisions rd{
       .num_acre_to_buy = 0,
       .num_acre_to_sold = 0,
@@ -101,9 +112,9 @@ RulersDecisions get_rulers_decisions(std::istream& in,
   };
 
   auto view_validation_error = print_validation_error();
-  
-  // Блок с чтением и валидацией покупаемых акров земли
-  std::cout << "Сколько акров повелеваешь купить?" << std::endl;
+
+  // Р‘Р»РѕРє СЃ С‡С‚РµРЅРёРµРј Рё РІР°Р»РёРґР°С†РёРµР№ РїРѕРєСѓРїР°РµРјС‹С… Р°РєСЂРѕРІ Р·РµРјР»Рё
+  std::cout << "РЎРєРѕР»СЊРєРѕ Р°РєСЂРѕРІ РїРѕРІРµР»РµРІР°РµС€СЊ РєСѓРїРёС‚СЊ?" << std::endl;
 
   rd.num_acre_to_buy = read_validated_input(
       in, view_validation_error,
@@ -111,8 +122,8 @@ RulersDecisions get_rulers_decisions(std::istream& in,
           {validate_negative,
            validate_num_acre_to_buy(city_state, city_events)}});
 
-  // Блок с чтением и валидацией продаваемых акров земли
-  std::cout << "Сколько акров повелеваешь продать?" << std::endl;
+  // Р‘Р»РѕРє СЃ С‡С‚РµРЅРёРµРј Рё РІР°Р»РёРґР°С†РёРµР№ РїСЂРѕРґР°РІР°РµРјС‹С… Р°РєСЂРѕРІ Р·РµРјР»Рё
+  std::cout << "РЎРєРѕР»СЊРєРѕ Р°РєСЂРѕРІ РїРѕРІРµР»РµРІР°РµС€СЊ РїСЂРѕРґР°С‚СЊ?" << std::endl;
 
   rd.num_acre_to_sold = read_validated_input(
       in, view_validation_error,
@@ -120,8 +131,8 @@ RulersDecisions get_rulers_decisions(std::istream& in,
           {validate_negative,
            validate_num_acre_to_sold(city_state, city_events)}});
 
-  // Блок с чтением и валидацией съедаемых запасов пшеницы
-  std::cout << "Сколько бушелей пшеницы повелеваешь съесть?"<< std::endl;
+  // Р‘Р»РѕРє СЃ С‡С‚РµРЅРёРµРј Рё РІР°Р»РёРґР°С†РёРµР№ СЃСЉРµРґР°РµРјС‹С… Р·Р°РїР°СЃРѕРІ РїС€РµРЅРёС†С‹
+  std::cout << "РЎРєРѕР»СЊРєРѕ Р±СѓС€РµР»РµР№ РїС€РµРЅРёС†С‹ РїРѕРІРµР»РµРІР°РµС€СЊ СЃСЉРµСЃС‚СЊ?" << std::endl;
 
   rd.bushels_wheat_to_citizen = read_validated_input(
       in, view_validation_error,
@@ -129,8 +140,8 @@ RulersDecisions get_rulers_decisions(std::istream& in,
           {validate_negative,
            validate_bushels_wheat_to_citizen(city_state, city_events, rd)}});
 
-  // Блок с чтением и валидацией акров которые отдаются под засев
-  std::cout << "Сколько акров земли повелеваешь засеять?" << std::endl;
+  // Р‘Р»РѕРє СЃ С‡С‚РµРЅРёРµРј Рё РІР°Р»РёРґР°С†РёРµР№ Р°РєСЂРѕРІ РєРѕС‚РѕСЂС‹Рµ РѕС‚РґР°СЋС‚СЃСЏ РїРѕРґ Р·Р°СЃРµРІ
+  std::cout << "РЎРєРѕР»СЊРєРѕ Р°РєСЂРѕРІ Р·РµРјР»Рё РїРѕРІРµР»РµРІР°РµС€СЊ Р·Р°СЃРµСЏС‚СЊ?" << std::endl;
 
   rd.num_acre_to_plant = read_validated_input(
       in, view_validation_error,
@@ -139,4 +150,24 @@ RulersDecisions get_rulers_decisions(std::istream& in,
            validate_num_acre_to_plant(city_state, city_events, rd)}});
 
   return rd;
+}
+
+json to_json(const RulersDecisions &decisions)
+{
+  return json{
+      {"num_acre_to_buy", decisions.num_acre_to_buy},
+      {"num_acre_to_sold", decisions.num_acre_to_sold},
+      {"bushels_wheat_to_citizen", decisions.bushels_wheat_to_citizen},
+      {"num_acre_to_plant", decisions.num_acre_to_plant}};
+}
+
+template <>
+RulersDecisions from_json<RulersDecisions>(const json &j)
+{
+  RulersDecisions decisions;
+  j.at("num_acre_to_buy").get_to(decisions.num_acre_to_buy);
+  j.at("num_acre_to_sold").get_to(decisions.num_acre_to_sold);
+  j.at("bushels_wheat_to_citizen").get_to(decisions.bushels_wheat_to_citizen);
+  j.at("num_acre_to_plant").get_to(decisions.num_acre_to_plant);
+  return decisions;
 }

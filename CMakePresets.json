@@ -1,0 +1,19 @@
+{
+    "version": 8,
+    "configurePresets": [
+        {
+            "name": "debug",
+            "displayName": "clang",
+            "description": "Using compilers: C = /ust/bin/gcc, CXX = /usr/bin/g++",
+            "binaryDir": "${sourceDir}/build/",
+            "generator": "Ninja",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/install/${presetName}",
+                "CMAKE_CXX_COMPILER": "/usr/bin/clang++",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+                "UNIT_TEST": true
+            }
+        }
+    ]
+}

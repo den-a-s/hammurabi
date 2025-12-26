@@ -1,19 +1,26 @@
 #pragma once
 #include <cstdint>
 #include <format>
+#include <json.hpp>
+#include "utils.h"
 
-struct CityState {
-  int32_t num_acre;
-  int32_t num_acre_with_wheat;
-  int32_t num_citizen;
-  int32_t bushels_wheat;
+using json = nlohmann::json;
+
+struct CityState
+{
+  int num_acre;
+  int num_acre_with_wheat;
+  int num_citizen;
+  int bushels_wheat;
 };
 
 template <>
-struct std::formatter<CityState> {
-  constexpr auto parse(std::format_parse_context& ctx) { return ctx.begin(); }
+struct std::formatter<CityState>
+{
+  constexpr auto parse(std::format_parse_context &ctx) { return ctx.begin(); }
 
-  auto format(const CityState& v, std::format_context& ctx) const {
+  auto format(const CityState &v, std::format_context &ctx) const
+  {
     return std::format_to(ctx.out(),
                           "CityState[num_acre={}, num_acre_with_wheat={}, "
                           "num_citizen={}, bushels_wheat={}]",
@@ -22,3 +29,7 @@ struct std::formatter<CityState> {
   }
 };
 
+json to_json(const CityState &state);
+
+template <>
+CityState from_json<CityState>(const json &j);
